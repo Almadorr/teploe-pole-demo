@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Кабинет управления — Тёплое поле</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=8">
+</head>
+<body data-page="admin">
+<header id="top"></header>
+<main class="section" style="padding-top:40px"><div class="wrap">
+  <span class="eyebrow">Кабинет управления</span><h1 style="font-size:clamp(28px,4vw,44px)">Редактирование сайта</h1>
+  <p class="lead">Это демо: правки сохраняются только в вашем браузере, чтобы можно было попробовать. В настоящем сайте — вход по паролю, изменения видят все посетители.</p>
+  <div class="adm" style="margin-top:28px">
+    <aside id="tabs"><button data-t="products" class="on">Товары</button><button data-t="news">Новости</button><button data-t="texts">Тексты и контакты</button><button data-t="pages">Новые страницы</button></aside>
+    <div class="panel" id="panel"></div>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px"><button class="btn" id="save">Сохранить изменения</button><a class="btn ghost" href="index.html">Посмотреть сайт →</a><button class="btn ghost" id="reset">Вернуть как было</button></div>
+</div></main>
+<div class="saved" id="toast">Сохранено — откройте сайт, чтобы увидеть</div>
+<footer id="foot"></footer>
+<script src="data.js?v=8"></script>
+<script src="app.js?v=8"></script>
+<script>
+(function(){
+  var D = TP.data, esc = TP.esc, tab = "products", panel = document.getElementById("panel");
+  function slug(s){ return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+  var views = {
+    products: function(){
+      return '<h3>Товары</h3><p style="color:var(--muted)">Меняйте название, вес, цену и линейку. Галочка «Новинка» выводит товар на главную.</p>'
+        + D.products.map(function(p,i){ return '<div class="row"><div class="ph">'+TP.pack(p)+'</div>'
+          + '<input data-i="'+i+'" data-k="name" value="'+esc(p.name)+'" aria-label="Название">'
+          + '<input data-i="'+i+'" data-k="price" type="number" value="'+p.price+'" aria-label="Цена">'
+          + '<input data-i="'+i+'" data-k="weight" value="'+esc(p.weight)+'" aria-label="Вес">'
+          + '<label style="display:flex;gap:6px;align-items:center;font-size:14px;white-space:nowrap"><input type="checkbox" data-i="'+i+'" data-k="isNew" '+(p.isNew?"checked":"")+' style="width:auto"> Новинка</label></div>'; }).join("")
+        + '<button class="btn ghost" id="add-prod" style="margin-top:16px">+ Добавить товар</button>';
+    },
+    news: function(){
+      return '<h3>Новости</h3><div style="display:grid;gap:10px;margin-bottom:20px"><input id="n-title" placeholder="Заголовок новости"><textarea id="n-text" placeholder="Текст новости" rows="3"></textarea><button class="btn" id="add-news" style="justify-self:start">Опубликовать новость</button></div>'
+        + D.news.map(function(n,i){ return '<div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)"><div><b>'+esc(n.title)+'</b><br><small style="color:var(--muted)">'+esc(n.date)+'</small></div><button class="btn ghost" data-del-news="'+i+'" style="padding:8px 14px">Удалить</button></div>'; }).join("");
+    },
+    texts: function(){
+      var f = [["slogan","Слоган на главной"],["about","О бренде (главная)"],["phone","Телефон"],["email","Почта"],["address","Адрес"]];
+      return '<h3>Тексты и контакты</h3><div style="display:grid;gap:14px">' + f.map(function(x){ var long = x[0]==="about"||x[0]==="slogan"; return '<label><b style="font-size:14px">'+x[1]+'</b>'+(long?'<textarea data-b="'+x[0]+'" rows="3">'+esc(D.brand[x[0]])+'</textarea>':'<input data-b="'+x[0]+'" value="'+esc(D.brand[x[0]])+'">')+'</label>'; }).join("") + '</div>';
+    },
+    pages: function(){
+      return '<h3>Новые страницы и разделы</h3><p style="color:var(--muted)">Новая страница сразу появляется в меню сайта.</p><div style="display:grid;gap:10px;margin-bottom:20px"><input id="p-title" placeholder="Название, например «Оптовым покупателям»"><textarea id="p-text" rows="5" placeholder="Текст страницы"></textarea><button class="btn" id="add-page" style="justify-self:start">Создать страницу</button></div>'
+        + (D.pages.length ? D.pages.map(function(p,i){ return '<div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)"><a href="page.html?id='+encodeURIComponent(p.id)+'"><b>'+esc(p.title)+'</b></a><button class="btn ghost" data-del-page="'+i+'" style="padding:8px 14px">Удалить</button></div>'; }).join("") : '<p style="color:var(--muted)">Пока нет добавленных страниц.</p>');
+    }
+  };
+  function draw(){ panel.innerHTML = views[tab](); }
+  function toast(msg){ var t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(function(){ t.classList.remove("show"); }, 2600); }
+  function persist(msg){ if (TP.save()) toast(msg || "Сохранено — откройте сайт, чтобы увидеть"); else toast("Браузер не дал сохранить (частный режим?)"); }
+  document.getElementById("tabs").addEventListener("click", function(e){ var b = e.target.closest("button"); if (!b) return; tab = b.getAttribute("data-t"); this.querySelectorAll("button").forEach(function(x){ x.classList.toggle("on", x===b); }); draw(); });
+  panel.addEventListener("input", function(e){
+    var el = e.target, i = el.getAttribute("data-i"), k = el.getAttribute("data-k"), b = el.getAttribute("data-b");
+    if (i !== null && k) { var p = D.products[+i]; p[k] = k==="isNew" ? el.checked : k==="price" ? +el.value : el.value; }
+    if (b) D.brand[b] = el.value;
+  });
+  panel.addEventListener("change", function(e){ if (e.target.getAttribute("data-k")==="isNew") { D.products[+e.target.getAttribute("data-i")].isNew = e.target.checked; } });
+  panel.addEventListener("click", function(e){
+    var t = e.target;
+    if (t.id === "add-prod") { D.products.push({ id: slug(), line: D.lines[0].id, name: "Новый продукт", weight: "500 г", price: 100, isNew: true, kcal: 300, protein: 10, fat: 2, carbs: 60, cook: "15 мин", text: "Описание продукта." }); draw(); }
+    if (t.id === "add-news") { var ti = document.getElementById("n-title").value.trim(); if (!ti) return; D.news.unshift({ date: new Date().toISOString().slice(0,10), title: ti, text: document.getElementById("n-text").value.trim() }); persist("Новость опубликована"); draw(); }
+    if (t.id === "add-page") { var pt = document.getElementById("p-title").value.trim(); if (!pt) return; D.pages.push({ id: slug(), title: pt, text: document.getElementById("p-text").value.trim() }); persist("Страница создана — она уже в меню"); location.reload(); }
+    if (t.hasAttribute("data-del-news")) { D.news.splice(+t.getAttribute("data-del-news"),1); persist("Новость удалена"); draw(); }
+    if (t.hasAttribute("data-del-page")) { D.pages.splice(+t.getAttribute("data-del-page"),1); persist("Страница удалена"); location.reload(); }
+  });
+  document.getElementById("save").addEventListener("click", function(){ persist(); });
+  document.getElementById("reset").addEventListener("click", function(){ if (confirm("Вернуть все тексты как в начале?")) { TP.reset(); location.reload(); } });
+  draw();
+})();
+</script>
+</body>
+</html>

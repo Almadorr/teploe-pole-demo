@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /admin.html
+Sitemap: https://almadorr.github.io/teploe-pole-demo/sitemap.xml
